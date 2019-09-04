@@ -45,6 +45,7 @@ public class TransactionalTemplate {
      */
     public Object execute(TransactionalExecutor business) throws Throwable {
         // 1. get or create a transaction
+        //1、创建或者获取全局事务，如果是事务发起方则是创建全局事务
         GlobalTransaction tx = GlobalTransactionContext.getCurrentOrCreate();
 
         // 1.1 get transactionInfo

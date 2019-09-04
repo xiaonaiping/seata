@@ -15,6 +15,13 @@
  */
 package io.seata.spring.annotation;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.seata.common.exception.ShouldNeverHappenException;
 import io.seata.common.util.StringUtils;
 import io.seata.rm.GlobalLockTemplate;
@@ -32,13 +39,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.core.BridgeMethodResolver;
 import org.springframework.util.ClassUtils;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * The type Global transactional interceptor.
@@ -66,7 +66,8 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(final MethodInvocation methodInvocation) throws Throwable {
-        Class<?> targetClass = (methodInvocation.getThis() != null ? AopUtils.getTargetClass(methodInvocation.getThis()) : null);
+        Class<?> targetClass = (methodInvocation.getThis() != null ? AopUtils.getTargetClass(methodInvocation.getThis())
+            : null);
         Method specificMethod = ClassUtils.getMostSpecificMethod(methodInvocation.getMethod(), targetClass);
         final Method method = BridgeMethodResolver.findBridgedMethod(specificMethod);
 
@@ -96,7 +97,7 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
     }
 
     private Object handleGlobalTransaction(final MethodInvocation methodInvocation,
-                                           final GlobalTransactional globalTrxAnno) throws Throwable {
+        final GlobalTransactional globalTrxAnno) throws Throwable {
         try {
             return transactionalTemplate.execute(new TransactionalExecutor() {
                 @Override
@@ -114,9 +115,11 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
 
                 @Override
                 public TransactionInfo getTransactionInfo() {
+                    //组装全局事务信息
                     TransactionInfo transactionInfo = new TransactionInfo();
                     transactionInfo.setTimeOut(globalTrxAnno.timeoutMills());
                     transactionInfo.setName(name());
+                    //回滚、不回滚规则
                     Set<RollbackRule> rollbackRules = new LinkedHashSet<>();
                     for (Class<?> rbRule : globalTrxAnno.rollbackFor()) {
                         rollbackRules.add(new RollbackRule(rbRule));
@@ -161,8 +164,8 @@ public class GlobalTransactionalInterceptor implements MethodInterceptor {
 
     private String formatMethod(Method method) {
         String paramTypes = Arrays.stream(method.getParameterTypes())
-                .map(Class::getName)
-                .collect(Collectors.joining(", ", "(", ")"));
+            .map(Class::getName)
+            .collect(Collectors.joining(", ", "(", ")"));
         return method.getName() + paramTypes;
     }
 }
